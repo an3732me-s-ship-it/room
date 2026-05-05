@@ -22,32 +22,43 @@
         init: function() {
             this.unlockedCount = 0; 
             this.stabilizer = document.querySelector('#stabilizer');
-            this.w2 = document.querySelector('#w2');
-            this.w3 = document.querySelector('#w3');
+            this.corners = [
+                document.querySelector('#w1'), 
+                document.querySelector('#w2'), 
+                document.querySelector('#w3'),
+                document.querySelector('#w4')
+            ];
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. Get current rotation and APPLY OFFSET
-            // Based on your photo, your '0' is actually around 90 degrees in standard math.
+            // 1. CALIBRATED ROTATION
+            // Your photo (IMG_20260505_115614.jpg) is the '0' position.
             let rawRad = this.el.object3D.rotation.y;
             let deg = (THREE.MathUtils.radToDeg(rawRad) + 90) % 360; 
             if (deg < 0) deg += 360;
 
-            // 2. STABILIZER: Keep the corners fixed on the desk
+            // 2. STABILIZER
+            // Keeps the square oriented to your desk/laptop
             if (this.stabilizer) {
-                // We use the rawRad for counter-rotation to keep the desk stable
                 this.stabilizer.object3D.rotation.y = -rawRad;
             }
 
-            // 3. TRIGGER LOGIC (Order: 1 -> 2 -> 3)
-            // As you rotate CLOCKWISE from your photo position:
+            // 3. FULL SQUARE TRIGGER LOGIC
+            // Quarter turn 1 (90°)
             if (deg > 70 && deg < 130) this.unlockedCount = Math.max(this.unlockedCount, 1);
+            // Quarter turn 2 (180°)
             if (deg > 160 && deg < 220) this.unlockedCount = Math.max(this.unlockedCount, 2);
+            // Quarter turn 3 (270°)
+            if (deg > 250 && deg < 310) this.unlockedCount = Math.max(this.unlockedCount, 3);
 
-            // 4. Set Visibility
-            if(this.w2) this.w2.setAttribute('visible', this.unlockedCount >= 1);
-            if(this.w3) this.w3.setAttribute('visible', this.unlockedCount >= 2);
+            // 4. Update Visibility for all 4 slots
+            this.corners.forEach((corner, index) => {
+                if (corner) {
+                    // Corner 1 is index 0, so it's always true.
+                    corner.setAttribute('visible', index <= this.unlockedCount);
+                }
+            });
         }
     });
     </script>
@@ -60,7 +71,7 @@
             
             <a-entity id="stabilizer">
                 
-                <!-- CORNER 1: Fixed RED (Top-Left) -->
+                <!-- CORNER 1: Fixed (Red) - Top-Left -->
                 <a-entity id="w1" gltf-model="wall.glb" 
                           position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8" 
                           material-modifier="color: #db35cb">
@@ -76,6 +87,12 @@
                 <a-entity id="w3" gltf-model="wall.glb" 
                           position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #ae35db">
+                </a-entity>
+
+                <!-- CORNER 4: Bottom-Left (Green) -->
+                <a-entity id="w4" gltf-model="wall.glb" 
+                          position="-2.4 0 -2.4" rotation="0 270 0" scale="8 8 8" 
+                          visible="false" material-modifier="color: #4135db">
                 </a-entity>
 
             </a-entity>
