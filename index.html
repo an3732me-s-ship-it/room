@@ -39,19 +39,28 @@
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
         <a-marker type="pattern" url="pattern-switch2.patt" rotational-mirror>
-            
-            <!-- DEBUG BOX: If you see this red box but NO walls, 
-                 the problem is the .glb file path or scale. -->
-            <a-box position="0 0 0" scale="0.05 0.05 0.05" color="red"></a-box>
-            
-            <!-- THE WALLS -->
-            <!-- Note: I added scale="10 10 10" because Rhino models are often tiny -->
-            <a-entity id="w1" class="wall-piece" gltf-model="wall.glb" rotation="0 0 0" scale="10 10 10"></a-entity>
-            <a-entity id="w2" class="wall-piece" gltf-model="wall.glb" rotation="0 90 0" scale="10 10 10" visible="false"></a-entity>
-            <a-entity id="w3" class="wall-piece" gltf-model="wall.glb" rotation="0 180 0" scale="10 10 10" visible="false"></a-entity>
-            <a-entity id="w4" class="wall-piece" gltf-model="wall.glb" rotation="0 270 0" scale="10 10 10" visible="false"></a-entity>
+    
+    <!-- DEBUG CENTER BOX -->
+    <a-box position="0 0 0" scale="0.05 0.05 0.05" color="red"></a-box>
+    
+    <!-- THE BOX FORMATION -->
+    <!-- Wall 1: Top Right -->
+    <a-entity id="w1" class="wall-piece" gltf-model="wall.glb" 
+              position="0.5 0 0.5" rotation="0 0 0" scale="10 10 10"></a-entity>
+    
+    <!-- Wall 2: Top Left -->
+    <a-entity id="w2" class="wall-piece" gltf-model="wall.glb" 
+              position="-0.5 0 0.5" rotation="0 90 0" scale="10 10 10" visible="false"></a-entity>
+    
+    <!-- Wall 3: Bottom Left -->
+    <a-entity id="w3" class="wall-piece" gltf-model="wall.glb" 
+              position="-0.5 0 -0.5" rotation="0 180 0" scale="10 10 10" visible="false"></a-entity>
+    
+    <!-- Wall 4: Bottom Right -->
+    <a-entity id="w4" class="wall-piece" gltf-model="wall.glb" 
+              position="0.5 0 -0.5" rotation="0 270 0" scale="10 10 10" visible="false"></a-entity>
 
-        </a-marker>
+</a-marker>
 
         <a-entity camera></a-entity>
     </a-scene>
