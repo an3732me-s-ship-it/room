@@ -18,44 +18,46 @@
         }
     });
 
-    AFRAME.registerComponent('square-dial', {
+    AFRAME.registerComponent('strict-three-corners', {
         init: function() {
-            this.unlockedCount = 0; // Starts with only Corner 1 (Index 0)
+            this.unlockedCount = 0; 
             this.stabilizer = document.querySelector('#stabilizer');
             this.corners = [
                 document.querySelector('#w1'), 
                 document.querySelector('#w2'), 
-                document.querySelector('#w3'),
-                document.querySelector('#w4')
+                document.querySelector('#w3')
             ];
+            // Safety: Force all but the first one to be hidden at start
+            this.corners[1].setAttribute('visible', false);
+            this.corners[2].setAttribute('visible', false);
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. Counter-rotation to keep slots fixed on desk
             let rotRad = this.el.object3D.rotation.y;
             if (this.stabilizer) {
                 this.stabilizer.object3D.rotation.y = -rotRad;
             }
 
-            // 2. Calculate degrees (0-360)
             let deg = THREE.MathUtils.radToDeg(rotRad) % 360;
             if (deg < 0) deg += 360;
 
-            // 3. Selective Reveal Logic (Order: 1 -> 2 -> 3 -> 4)
-            // Turning clockwise hits these degree milestones
-            if (deg > 70 && deg < 110 && this.unlockedCount < 1) this.unlockedCount = 1;
-            if (deg > 160 && deg < 200 && this.unlockedCount < 2) this.unlockedCount = 2;
-            if (deg > 250 && deg < 290 && this.unlockedCount < 3) this.unlockedCount = 3;
+            // NEW: LOGIC LOCKS. 
+            // You MUST pass through the rotation windows in order.
+            
+            // To unlock Corner 2: Must be around 90 degrees
+            if (this.unlockedCount === 0 && deg > 80 && deg < 110) {
+                this.unlockedCount = 1;
+            }
+            
+            // To unlock Corner 3: Must already have Corner 2 AND be around 180 degrees
+            if (this.unlockedCount === 1 && deg > 170 && deg < 200) {
+                this.unlockedCount = 2;
+            }
 
-            // 4. Update Visibility selectively
-            this.corners.forEach((corner, index) => {
-                if (corner) {
-                    // Corner 1 (index 0) is always visible
-                    // Others only show if their milestone is reached
-                    corner.setAttribute('visible', index <= this.unlockedCount);
-                }
-            });
+            // Apply visibility based on the count
+            this.corners[1].setAttribute('visible', this.unlockedCount >= 1);
+            this.corners[2].setAttribute('visible', this.unlockedCount >= 2);
         }
     });
     </script>
@@ -64,37 +66,31 @@
 <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
-        <a-marker type="pattern" url="pattern-switch2.patt" square-dial>
+        <a-marker type="pattern" url="pattern-switch2.patt" strict-three-corners>
             
-            <!-- STABILIZER: Stays 'frozen' relative to your laptop -->
             <a-entity id="stabilizer">
                 
-                <!-- Corner 1: Fixed RED -->
+                <!-- Corner 1: Fixed RED (Always visible) -->
                 <a-entity id="w1" gltf-model="wall.glb" 
                           position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8" 
                           material-modifier="color: #ff0000">
                 </a-entity>
 
-                <!-- Corner 2: Top-Right GREEN (Appears at 90°) -->
+                <!-- Corner 2: Unlocks at 90 deg -->
                 <a-entity id="w2" gltf-model="wall.glb" 
                           position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
                 </a-entity>
 
-                <!-- Corner 3: Bottom-Right GREEN (Appears at 180°) -->
+                <!-- Corner 3: Unlocks at 180 deg -->
                 <a-entity id="w3" gltf-model="wall.glb" 
                           position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
                 </a-entity>
 
-                <!-- Corner 4: Bottom-Left GREEN (Appears at 270°) -->
-                <a-entity id="w4" gltf-model="wall.glb" 
-                          position="-2.4 0 -2.4" rotation="0 270 0" scale="8 8 8" 
-                          visible="false" material-modifier="color: #00ff00">
-                </a-entity>
-
             </a-entity>
 
+            <a-box scale="0.1 0.1 0.1" color="black"></a-box>
         </a-marker>
 
         <a-entity camera></a-entity>
