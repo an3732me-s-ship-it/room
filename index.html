@@ -20,36 +20,42 @@
 
     AFRAME.registerComponent('square-dial', {
         init: function() {
-            this.unlocked = 0;
+            this.unlockedCount = 0; // Starts with only Corner 1 (Index 0)
             this.stabilizer = document.querySelector('#stabilizer');
-            this.w2 = document.querySelector('#w2');
-            this.w3 = document.querySelector('#w3');
-            this.w4 = document.querySelector('#w4');
+            this.corners = [
+                document.querySelector('#w1'), 
+                document.querySelector('#w2'), 
+                document.querySelector('#w3'),
+                document.querySelector('#w4')
+            ];
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. Get Marker Rotation
+            // 1. Counter-rotation to keep slots fixed on desk
             let rotRad = this.el.object3D.rotation.y;
-            let deg = THREE.MathUtils.radToDeg(rotRad) % 360;
-            if (deg < 0) deg += 360;
-
-            // 2. COUNTER-ROTATE THE STABILIZER
-            // This makes the internal 'grid' stay fixed to your laptop/desk
             if (this.stabilizer) {
                 this.stabilizer.object3D.rotation.y = -rotRad;
             }
 
-            // 3. STRICT LOCKING LOGIC
-            // We only unlock if the marker is turned to the specific quadrant
-            if (deg > 80 && deg < 100) this.unlocked = Math.max(this.unlocked, 1);
-            if (deg > 170 && deg < 190) this.unlocked = Math.max(this.unlocked, 2);
-            if (deg > 260 && deg < 280) this.unlocked = Math.max(this.unlocked, 3);
+            // 2. Calculate degrees (0-360)
+            let deg = THREE.MathUtils.radToDeg(rotRad) % 360;
+            if (deg < 0) deg += 360;
 
-            // 4. Update Visibility
-            if(this.w2) this.w2.setAttribute('visible', this.unlocked >= 1);
-            if(this.w3) this.w3.setAttribute('visible', this.unlocked >= 2);
-            if(this.w4) this.w4.setAttribute('visible', this.unlocked >= 3);
+            // 3. Selective Reveal Logic (Order: 1 -> 2 -> 3 -> 4)
+            // Turning clockwise hits these degree milestones
+            if (deg > 70 && deg < 110 && this.unlockedCount < 1) this.unlockedCount = 1;
+            if (deg > 160 && deg < 200 && this.unlockedCount < 2) this.unlockedCount = 2;
+            if (deg > 250 && deg < 290 && this.unlockedCount < 3) this.unlockedCount = 3;
+
+            // 4. Update Visibility selectively
+            this.corners.forEach((corner, index) => {
+                if (corner) {
+                    // Corner 1 (index 0) is always visible
+                    // Others only show if their milestone is reached
+                    corner.setAttribute('visible', index <= this.unlockedCount);
+                }
+            });
         }
     });
     </script>
@@ -60,29 +66,28 @@
         
         <a-marker type="pattern" url="pattern-switch2.patt" square-dial>
             
-            <!-- STABILIZER: This entity rotates opposite to the marker -->
-            <!-- It keeps the X and Z axes from spinning on your desk -->
+            <!-- STABILIZER: Stays 'frozen' relative to your laptop -->
             <a-entity id="stabilizer">
                 
-                <!-- CORNER 1: Fixed (Red) -->
+                <!-- Corner 1: Fixed RED -->
                 <a-entity id="w1" gltf-model="wall.glb" 
                           position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8" 
                           material-modifier="color: #ff0000">
                 </a-entity>
 
-                <!-- CORNER 2: Top-Right (90 deg) -->
+                <!-- Corner 2: Top-Right GREEN (Appears at 90°) -->
                 <a-entity id="w2" gltf-model="wall.glb" 
                           position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
                 </a-entity>
 
-                <!-- CORNER 3: Bottom-Right (180 deg) -->
+                <!-- Corner 3: Bottom-Right GREEN (Appears at 180°) -->
                 <a-entity id="w3" gltf-model="wall.glb" 
                           position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
                 </a-entity>
 
-                <!-- CORNER 4: Bottom-Left (270 deg) -->
+                <!-- Corner 4: Bottom-Left GREEN (Appears at 270°) -->
                 <a-entity id="w4" gltf-model="wall.glb" 
                           position="-2.4 0 -2.4" rotation="0 270 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
@@ -90,7 +95,6 @@
 
             </a-entity>
 
-            <a-box scale="0.1 0.1 0.1" color="black"></a-box>
         </a-marker>
 
         <a-entity camera></a-entity>
