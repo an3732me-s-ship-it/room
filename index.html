@@ -18,46 +18,36 @@
         }
     });
 
-    AFRAME.registerComponent('strict-three-corners', {
+    AFRAME.registerComponent('selective-reveal', {
         init: function() {
             this.unlockedCount = 0; 
             this.stabilizer = document.querySelector('#stabilizer');
-            this.corners = [
-                document.querySelector('#w1'), 
-                document.querySelector('#w2'), 
-                document.querySelector('#w3')
-            ];
-            // Safety: Force all but the first one to be hidden at start
-            this.corners[1].setAttribute('visible', false);
-            this.corners[2].setAttribute('visible', false);
+            this.w2 = document.querySelector('#w2');
+            this.w3 = document.querySelector('#w3');
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            let rotRad = this.el.object3D.rotation.y;
-            if (this.stabilizer) {
-                this.stabilizer.object3D.rotation.y = -rotRad;
-            }
-
-            let deg = THREE.MathUtils.radToDeg(rotRad) % 360;
+            // 1. Get current rotation and APPLY OFFSET
+            // Based on your photo, your '0' is actually around 90 degrees in standard math.
+            let rawRad = this.el.object3D.rotation.y;
+            let deg = (THREE.MathUtils.radToDeg(rawRad) + 90) % 360; 
             if (deg < 0) deg += 360;
 
-            // NEW: LOGIC LOCKS. 
-            // You MUST pass through the rotation windows in order.
-            
-            // To unlock Corner 2: Must be around 90 degrees
-            if (this.unlockedCount === 0 && deg > 80 && deg < 110) {
-                this.unlockedCount = 1;
-            }
-            
-            // To unlock Corner 3: Must already have Corner 2 AND be around 180 degrees
-            if (this.unlockedCount === 1 && deg > 170 && deg < 200) {
-                this.unlockedCount = 2;
+            // 2. STABILIZER: Keep the corners fixed on the desk
+            if (this.stabilizer) {
+                // We use the rawRad for counter-rotation to keep the desk stable
+                this.stabilizer.object3D.rotation.y = -rawRad;
             }
 
-            // Apply visibility based on the count
-            this.corners[1].setAttribute('visible', this.unlockedCount >= 1);
-            this.corners[2].setAttribute('visible', this.unlockedCount >= 2);
+            // 3. TRIGGER LOGIC (Order: 1 -> 2 -> 3)
+            // As you rotate CLOCKWISE from your photo position:
+            if (deg > 70 && deg < 130) this.unlockedCount = Math.max(this.unlockedCount, 1);
+            if (deg > 160 && deg < 220) this.unlockedCount = Math.max(this.unlockedCount, 2);
+
+            // 4. Set Visibility
+            if(this.w2) this.w2.setAttribute('visible', this.unlockedCount >= 1);
+            if(this.w3) this.w3.setAttribute('visible', this.unlockedCount >= 2);
         }
     });
     </script>
@@ -66,23 +56,23 @@
 <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
-        <a-marker type="pattern" url="pattern-switch2.patt" strict-three-corners>
+        <a-marker type="pattern" url="pattern-switch2.patt" selective-reveal>
             
             <a-entity id="stabilizer">
                 
-                <!-- Corner 1: Fixed RED (Always visible) -->
+                <!-- CORNER 1: Fixed RED (Top-Left) -->
                 <a-entity id="w1" gltf-model="wall.glb" 
                           position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8" 
                           material-modifier="color: #ff0000">
                 </a-entity>
 
-                <!-- Corner 2: Unlocks at 90 deg -->
+                <!-- CORNER 2: Top-Right (Green) -->
                 <a-entity id="w2" gltf-model="wall.glb" 
                           position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
                 </a-entity>
 
-                <!-- Corner 3: Unlocks at 180 deg -->
+                <!-- CORNER 3: Bottom-Right (Green) -->
                 <a-entity id="w3" gltf-model="wall.glb" 
                           position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
                           visible="false" material-modifier="color: #00ff00">
@@ -90,7 +80,6 @@
 
             </a-entity>
 
-            <a-box scale="0.1 0.1 0.1" color="black"></a-box>
         </a-marker>
 
         <a-entity camera></a-entity>
