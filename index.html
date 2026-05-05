@@ -2,56 +2,55 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>3-Corner Color Test</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <script>
-    // Component to overwrite Rhino/GLB colors
     AFRAME.registerComponent('material-modifier', {
         schema: { color: { type: 'color' } },
         init: function () {
             this.el.addEventListener('model-loaded', () => {
                 const mesh = this.el.getObject3D('mesh');
-                if (mesh) {
-                    mesh.traverse(node => {
-                        if (node.isMesh) {
-                            node.material.color.set(this.data.color);
-                        }
-                    });
-                }
+                if (mesh) mesh.traverse(node => {
+                    if (node.isMesh) node.material.color.set(this.data.color);
+                });
             });
         }
     });
 
-    AFRAME.registerComponent('rotational-mirror', {
+    AFRAME.registerComponent('fixed-square-logic', {
         init: function() {
             this.corners = [
                 document.querySelector('#w1'), 
                 document.querySelector('#w2'), 
-                document.querySelector('#w3')
+                document.querySelector('#w3'),
+                document.querySelector('#w4')
             ];
             this.unlockedCount = 0; 
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            let degrees = THREE.MathUtils.radToDeg(this.el.object3D.rotation.y) % 360;
+            let rotationRad = this.el.object3D.rotation.y;
+            let degrees = THREE.MathUtils.radToDeg(rotationRad) % 360;
             if (degrees < 0) degrees += 360;
 
-            // Triggering milestones based on your 90-degree diagram
-            // Milestone 1: First quarter turn unlocks the second corner
-            if (degrees > 70 && degrees < 120 && this.unlockedCount < 1) {
-                this.unlockedCount = 1;
-            }
-            // Milestone 2: Second quarter turn (180) unlocks the third corner
-            if (degrees > 160 && degrees < 210 && this.unlockedCount < 2) {
-                this.unlockedCount = 2;
-            }
+            // Milestones to unlock 4 corners total
+            if (degrees > 70 && degrees < 120 && this.unlockedCount < 1) this.unlockedCount = 1;
+            if (degrees > 160 && degrees < 210 && this.unlockedCount < 2) this.unlockedCount = 2;
+            if (degrees > 250 && degrees < 300 && this.unlockedCount < 3) this.unlockedCount = 3;
 
-            // Apply Visibility
-            if(this.corners[1]) this.corners[1].setAttribute('visible', this.unlockedCount >= 1);
-            if(this.corners[2]) this.corners[2].setAttribute('visible', this.unlockedCount >= 2);
+            this.corners.forEach((corner, index) => {
+                if (corner) {
+                    // Counter-rotate: keep "North" on your desk
+                    corner.object3D.rotation.y = -rotationRad + (index * Math.PI / 2);
+                    
+                    // Show pieces based on how many milestones we've passed
+                    if (index > 0) {
+                        corner.setAttribute('visible', this.unlockedCount >= index);
+                    }
+                }
+            });
         }
     });
     </script>
@@ -60,32 +59,21 @@
 <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
-        <a-marker type="pattern" url="pattern-switch2.patt" rotational-mirror>
+        <a-marker type="pattern" url="pattern-switch2.patt" fixed-square-logic>
             
-            <!-- CORNER 1: Fixed (Red) -->
-            <a-entity id="w1" gltf-model="wall.glb" 
-                      position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8"
-                      material-modifier="color: #ff0000">
-            </a-entity>
-
-            <!-- CORNER 2: Spawns at ~90 deg (Green) -->
-            <a-entity id="w2" gltf-model="wall.glb" 
-                      position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
-                      visible="false"
-                      material-modifier="color: #00ff00">
-            </a-entity>
-
-            <!-- CORNER 3: Spawns at ~180 deg (Green) -->
-            <a-entity id="w3" gltf-model="wall.glb" 
-                      position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
-                      visible="false"
-                      material-modifier="color: #00ff00">
-            </a-entity>
-
-            <a-box scale="0.1 0.1 0.1" color="black" opacity="0.5"></a-box>
+            <!-- CORNER 1: Top-Left (Red) -->
+            <a-entity id="w1" gltf-model="wall.glb" position="-2.4 0 2.4" scale="8 8 8" material-modifier="color: #ff0000"></a-entity>
+            
+            <!-- CORNER 2: Top-Right (Green) -->
+            <a-entity id="w2" gltf-model="wall.glb" position="2.4 0 2.4" scale="8 8 8" visible="false" material-modifier="color: #00ff00"></a-entity>
+            
+            <!-- CORNER 3: Bottom-Right (Green) -->
+            <a-entity id="w3" gltf-model="wall.glb" position="2.4 0 -2.4" scale="8 8 8" visible="false" material-modifier="color: #00ff00"></a-entity>
+            
+            <!-- CORNER 4: Bottom-Left (Green) -->
+            <a-entity id="w4" gltf-model="wall.glb" position="-2.4 0 -2.4" scale="8 8 8" visible="false" material-modifier="color: #00ff00"></a-entity>
 
         </a-marker>
-
         <a-entity camera></a-entity>
     </a-scene>
 </body>
