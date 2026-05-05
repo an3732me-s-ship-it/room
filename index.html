@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Square Builder AR</title>
+    <title>3-Corner Test</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
@@ -12,38 +12,30 @@
             this.corners = [
                 document.querySelector('#w1'), 
                 document.querySelector('#w2'), 
-                document.querySelector('#w3'), 
-                document.querySelector('#w4')
+                document.querySelector('#w3')
             ];
-            this.maxUnlocked = 0; 
+            this.unlockedCount = 0; 
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. Get current rotation in degrees
             let degrees = THREE.MathUtils.radToDeg(this.el.object3D.rotation.y) % 360;
             if (degrees < 0) degrees += 360;
 
-            // 2. Strict Step Logic
-            // We only unlock the NEXT piece if you are actually pointing the marker in that direction
-            // 0-45 deg: Only W1
-            // 45-135 deg: Unlock W2
-            // 135-225 deg: Unlock W3
-            // 225-315 deg: Unlock W4
-
-            if (degrees > 45 && degrees < 135) {
-                if (this.maxUnlocked < 1) this.maxUnlocked = 1;
-            } else if (degrees > 135 && degrees < 225) {
-                if (this.maxUnlocked < 2) this.maxUnlocked = 2;
-            } else if (degrees > 225 && degrees < 315) {
-                if (this.maxUnlocked < 3) this.maxUnlocked = 3;
+            // Strict Unlocking: Only moves forward, never backward
+            // Step 1: Turn to roughly 90 degrees to unlock the 2nd corner
+            if (degrees > 80 && degrees < 110 && this.unlockedCount < 1) {
+                this.unlockedCount = 1;
+            }
+            // Step 2: Turn further to roughly 180 degrees to unlock the 3rd corner
+            if (degrees > 170 && degrees < 200 && this.unlockedCount < 2) {
+                this.unlockedCount = 2;
             }
 
-            // 3. Update Visibility
-            this.corners[0].setAttribute('visible', true);
-            this.corners[1].setAttribute('visible', this.maxUnlocked >= 1);
-            this.corners[2].setAttribute('visible', this.maxUnlocked >= 2);
-            this.corners[3].setAttribute('visible', this.maxUnlocked >= 3);
+            // Apply visibility
+            if(this.corners[0]) this.corners[0].setAttribute('visible', true);
+            if(this.corners[1]) this.corners[1].setAttribute('visible', this.unlockedCount >= 1);
+            if(this.corners[2]) this.corners[2].setAttribute('visible', this.unlockedCount >= 2);
         }
     });
     </script>
@@ -54,17 +46,25 @@
         
         <a-marker type="pattern" url="pattern-switch2.patt" rotational-mirror>
             
-            <!-- CORNER 1: Fixed -->
-            <a-entity id="w1" gltf-model="wall.glb" position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8"></a-entity>
+            <!-- CORNER 1: Fixed (RED for testing) -->
+            <a-entity id="w1" gltf-model="wall.glb" 
+                      position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8">
+            </a-entity>
 
-            <!-- CORNER 2: Top-Right (90 deg) -->
-            <a-entity id="w2" gltf-model="wall.glb" position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" visible="false"></a-entity>
+            <!-- CORNER 2: Spawns at 90 deg (GREEN for testing) -->
+            <a-entity id="w2" gltf-model="wall.glb" 
+                      position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
+                      visible="false">
+            </a-entity>
 
-            <!-- CORNER 3: Bottom-Right (180 deg) -->
-            <a-entity id="w3" gltf-model="wall.glb" position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" visible="false"></a-entity>
+            <!-- CORNER 3: Spawns at 180 deg (BLUE for testing) -->
+            <a-entity id="w3" gltf-model="wall.glb" 
+                      position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
+                      visible="false">
+            </a-entity>
 
-            <!-- CORNER 4: Bottom-Left (270 deg) -->
-            <a-entity id="w4" gltf-model="wall.glb" position="-2.4 0 -2.4" rotation="0 270 0" scale="8 8 8" visible="false"></a-entity>
+            <!-- Center reference -->
+            <a-box scale="0.1 0.1 0.1" color="red"></a-box>
 
         </a-marker>
 
