@@ -2,35 +2,26 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Multiplication Test</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <script>
-    AFRAME.registerComponent('rotational-mirror', {
+    AFRAME.registerComponent('rotational-trigger', {
         init: function() {
-            this.w1 = document.querySelector('#w1');
             this.w2 = document.querySelector('#w2');
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. Get the Marker's current rotation in Radians and Degrees
-            let markerRotationRad = this.el.object3D.rotation.y;
-            let degrees = THREE.MathUtils.radToDeg(markerRotationRad) % 360;
+            // Get marker rotation in degrees (0-360)
+            let degrees = THREE.MathUtils.radToDeg(this.el.object3D.rotation.y) % 360;
             if (degrees < 0) degrees += 360;
 
-            // 2. COUNTER-ROTATION: 
-            // We apply the negative of the marker's rotation to the walls 
-            // so they stay "locked" to the camera's perspective/table.
-            if (this.w1) this.w1.object3D.rotation.y = -markerRotationRad;
-            if (this.w2) this.w2.object3D.rotation.y = -markerRotationRad + Math.PI/2; // +90 deg
-
-            // 3. MULTIPLICATION LOGIC
-            // Wall 1 is always visible.
-            // Wall 2 appears once you rotate the marker past 90 degrees.
+            // Trigger multiplication: 
+            // Only shows Wall 2 when the marker is turned 90 degrees
             if (this.w2) {
-                this.w2.setAttribute('visible', degrees > 90);
+                const shouldShow = degrees > 80 && degrees < 280;
+                this.w2.setAttribute('visible', shouldShow);
             }
         }
     });
@@ -40,24 +31,26 @@
 <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
-        <a-marker type="pattern" url="pattern-switch2.patt" rotational-mirror>
+        <a-marker type="pattern" url="pattern-switch2.patt" rotational-trigger>
             
-            <!-- WALL 1: Starts Top-Left -->
+            <!-- WALL 1: Left and Up (Your successful setup) -->
             <a-entity id="w1" 
                       gltf-model="wall.glb" 
                       position="-2.4 0 2.4" 
+                      rotation="0 0 0" 
                       scale="8 8 8">
             </a-entity>
 
-            <!-- WALL 2: Spawns Top-Right -->
+            <!-- WALL 2: Right and Up (Mirrored) -->
+            <!-- We rotate it 90 degrees so the corner faces Wall 1 -->
             <a-entity id="w2" 
                       gltf-model="wall.glb" 
                       position="2.4 0 2.4" 
+                      rotation="0 90 0" 
                       scale="8 8 8"
                       visible="false">
             </a-entity>
 
-            <!-- Marker Center Indicator -->
             <a-box scale="0.1 0.1 0.1" color="red"></a-box>
 
         </a-marker>
