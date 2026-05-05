@@ -2,27 +2,45 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <title>Square Builder AR</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <script>
-    AFRAME.registerComponent('rotational-trigger', {
+    AFRAME.registerComponent('rotational-mirror', {
         init: function() {
-            this.w2 = document.querySelector('#w2');
+            // Reference all 4 walls
+            this.corners = [
+                document.querySelector('#w1'), // Fixed
+                document.querySelector('#w2'), // 90 deg
+                document.querySelector('#w3'), // 180 deg
+                document.querySelector('#w4')  // 270 deg
+            ];
+            // Track the highest rotation milestone reached
+            this.maxUnlocked = 0; 
         },
         tick: function () {
+            // Only run logic if marker is visible
             if (!this.el.object3D.visible) return;
 
-            // Get marker rotation in degrees (0-360)
+            // 1. Get current rotation in degrees (0 to 360)
             let degrees = THREE.MathUtils.radToDeg(this.el.object3D.rotation.y) % 360;
             if (degrees < 0) degrees += 360;
 
-            // Trigger multiplication: 
-            // Only shows Wall 2 when the marker is turned 90 degrees
-            if (this.w2) {
-                const shouldShow = degrees > 80 && degrees < 280;
-                this.w2.setAttribute('visible', shouldShow);
-            }
+            // 2. Unlock Logic (Matching your drawing IMG_20260505_110735.jpg)
+            // Once a corner is unlocked, it stays visible
+            if (degrees > 90 && this.maxUnlocked < 1) this.maxUnlocked = 1;
+            if (degrees > 180 && this.maxUnlocked < 2) this.maxUnlocked = 2;
+            if (degrees > 270 && this.maxUnlocked < 3) this.maxUnlocked = 3;
+
+            // 3. Update Visibility
+            // Corner 1 is the 'fixed red' corner from your drawing
+            if (this.corners[0]) this.corners[0].setAttribute('visible', true);
+            
+            // Corners 2-4 are the 'green' additions
+            if (this.corners[1]) this.corners[1].setAttribute('visible', this.maxUnlocked >= 1);
+            if (this.corners[2]) this.corners[2].setAttribute('visible', this.maxUnlocked >= 2);
+            if (this.corners[3]) this.corners[3].setAttribute('visible', this.maxUnlocked >= 3);
         }
     });
     </script>
@@ -31,9 +49,10 @@
 <body style="margin:0; overflow:hidden;">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.7;">
         
-        <a-marker type="pattern" url="pattern-switch2.patt" rotational-trigger>
+        <!-- The marker with the logic attached -->
+        <a-marker type="pattern" url="pattern-switch2.patt" rotational-mirror>
             
-            <!-- WALL 1: Left and Up (Your successful setup) -->
+            <!-- CORNER 1: Fixed (Top-Left) -->
             <a-entity id="w1" 
                       gltf-model="wall.glb" 
                       position="-2.4 0 2.4" 
@@ -41,17 +60,35 @@
                       scale="8 8 8">
             </a-entity>
 
-            <!-- WALL 2: Right and Up (Mirrored) -->
-            <!-- We rotate it 90 degrees so the corner faces Wall 1 -->
+            <!-- CORNER 2: Spawns at 90 deg (Top-Right) -->
             <a-entity id="w2" 
                       gltf-model="wall.glb" 
                       position="2.4 0 2.4" 
                       rotation="0 90 0" 
-                      scale="8 8 8"
+                      scale="8 8 8" 
                       visible="false">
             </a-entity>
 
-            <a-box scale="0.1 0.1 0.1" color="red"></a-box>
+            <!-- CORNER 3: Spawns at 180 deg (Bottom-Right) -->
+            <a-entity id="w3" 
+                      gltf-model="wall.glb" 
+                      position="2.4 0 -2.4" 
+                      rotation="0 180 0" 
+                      scale="8 8 8" 
+                      visible="false">
+            </a-entity>
+
+            <!-- CORNER 4: Spawns at 270 deg (Bottom-Left) -->
+            <a-entity id="w4" 
+                      gltf-model="wall.glb" 
+                      position="-2.4 0 -2.4" 
+                      rotation="0 270 0" 
+                      scale="8 8 8" 
+                      visible="false">
+            </a-entity>
+
+            <!-- Central Indicator -->
+            <a-box scale="0.1 0.1 0.1" color="red" opacity="0.5"></a-box>
 
         </a-marker>
 
