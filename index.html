@@ -12,7 +12,9 @@
             this.el.addEventListener('model-loaded', () => {
                 const mesh = this.el.getObject3D('mesh');
                 if (mesh) mesh.traverse(node => {
-                    if (node.isMesh) node.material.color.set(this.data.color);
+                    if (node.isMesh) {
+                        node.material.color.set(this.data.color);
+                    }
                 });
             });
         }
@@ -25,37 +27,31 @@
             this.corners = [
                 document.querySelector('#w1'), 
                 document.querySelector('#w2'), 
-                document.querySelector('#w3'),
-                document.querySelector('#w4')
+                document.querySelector('#w3')
             ];
         },
         tick: function () {
             if (!this.el.object3D.visible) return;
 
-            // 1. CALIBRATED ROTATION
-            // Your photo (IMG_20260505_115614.jpg) is the '0' position.
+            // 1. CALIBRATED ROTATION (Using your photo as 0)
             let rawRad = this.el.object3D.rotation.y;
             let deg = (THREE.MathUtils.radToDeg(rawRad) + 90) % 360; 
             if (deg < 0) deg += 360;
 
             // 2. STABILIZER
-            // Keeps the square oriented to your desk/laptop
             if (this.stabilizer) {
                 this.stabilizer.object3D.rotation.y = -rawRad;
             }
 
-            // 3. FULL SQUARE TRIGGER LOGIC
-            // Quarter turn 1 (90°)
+            // 3. TRIGGER LOGIC
+            // Quarter turn 1 (90°) unlocks Corner 2
             if (deg > 70 && deg < 130) this.unlockedCount = Math.max(this.unlockedCount, 1);
-            // Quarter turn 2 (180°)
+            // Quarter turn 2 (180°) unlocks Corner 3
             if (deg > 160 && deg < 220) this.unlockedCount = Math.max(this.unlockedCount, 2);
-            // Quarter turn 3 (270°)
-            if (deg > 250 && deg < 310) this.unlockedCount = Math.max(this.unlockedCount, 3);
 
-            // 4. Update Visibility for all 4 slots
+            // 4. Update Visibility
             this.corners.forEach((corner, index) => {
                 if (corner) {
-                    // Corner 1 is index 0, so it's always true.
                     corner.setAttribute('visible', index <= this.unlockedCount);
                 }
             });
@@ -71,28 +67,22 @@
             
             <a-entity id="stabilizer">
                 
-                <!-- CORNER 1: Fixed (Red) - Top-Left -->
+                <!-- CORNER 1: Top-Left (Pink - #DB35CB) -->
                 <a-entity id="w1" gltf-model="wall.glb" 
                           position="-2.4 0 2.4" rotation="0 0 0" scale="8 8 8" 
-                          material-modifier="color: #db35cb">
+                          material-modifier="color: #DB35CB">
                 </a-entity>
 
-                <!-- CORNER 2: Top-Right (Green) -->
+                <!-- CORNER 2: Top-Right (Blue - #355EDB) -->
                 <a-entity id="w2" gltf-model="wall.glb" 
                           position="2.4 0 2.4" rotation="0 90 0" scale="8 8 8" 
-                          visible="false" material-modifier="color: #355edb">
+                          visible="false" material-modifier="color: #355EDB">
                 </a-entity>
 
-                <!-- CORNER 3: Bottom-Right (Green) -->
+                <!-- CORNER 3: Bottom-Right (Purple - #AE35DB) -->
                 <a-entity id="w3" gltf-model="wall.glb" 
                           position="2.4 0 -2.4" rotation="0 180 0" scale="8 8 8" 
-                          visible="false" material-modifier="color: #ae35db">
-                </a-entity>
-
-                <!-- CORNER 4: Bottom-Left (Green) -->
-                <a-entity id="w4" gltf-model="wall.glb" 
-                          position="-2.4 0 -2.4" rotation="0 270 0" scale="8 8 8" 
-                          visible="false" material-modifier="color: #4135db">
+                          visible="false" material-modifier="color: #AE35DB">
                 </a-entity>
 
             </a-entity>
